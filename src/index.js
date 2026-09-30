@@ -1,26 +1,41 @@
-const fs = require("fs");
-const path = require("path");
+const { Client, GatewayIntentBits } = require("discord.js");
+require("dotenv").config();
 
-function loadCommands() {
-  const commands = new Map();
-  const commandsPath = __dirname;
+const { askLunae } = require("./ai");
+const { handleCommand } = require("./commands/router");
 
-  for (const file of fs.readdirSync(commandsPath)) {
-    if (!file.endsWith(".js") || file === "index.js" || file === "router.js") {
-      continue;
+const client = new Client({
+  intents: [GatewayIntentBits.Guilds],
+});
+
+client.once("ready", () => {
+  console.log(`Lunae is online as ${client.user.tag}`);
+});
+
+client.on("interactionCreate", async (interaction) => {
+  if (!interaction.isChatInputCommand()) return;
+
+  try {
+    const handled = await handleCommand(interaction, {
+      askLunae,
+    });
+
+    if (!handled && !interaction.replied && !interaction.deferred) {
+      await interaction.reply("Unknown Lunae command.");
     }
+  } catch (error) {
+    console.error("Interaction error:", error);
 
-    const filePath = path.join(commandsPath, file);
-    const command = require(filePath);
-
-    if (command?.data?.name && typeof command.execute === "function") {
-      commands.set(command.data.name, command);
+    if (interaction.deferred || interaction.replied) {
+      await interaction.editReply(
+        "Something went wrong while processing the command."
+      );
+    } else {
+      await interaction.reply(
+        "Something went wrong while processing the command."
+      );
     }
   }
+});
 
-  return commands;
-}
-
-module.exports = {
-  loadCommands,
-};
+client.login(process.env.DISCORD_TOKEN);
