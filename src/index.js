@@ -1,18 +1,12 @@
-const {
-  Client,
-  GatewayIntentBits,
-  Collection,
-} = require("discord.js");
-
+const { Client, GatewayIntentBits } = require("discord.js");
 require("dotenv").config();
 
 const { askLunae } = require("./ai");
+const { handleCommand } = require("./commands/router");
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds],
 });
-
-client.commands = new Collection();
 
 client.once("ready", () => {
   console.log(`Lunae is online as ${client.user.tag}`);
@@ -21,25 +15,22 @@ client.once("ready", () => {
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
-  if (interaction.commandName !== "lunae") return;
-
-  const question = interaction.options.getString("question");
-
-  if (!question) {
-    await interaction.reply("Please provide a question.");
-    return;
-  }
-
-  await interaction.deferReply();
-
   try {
-    const answer = await askLunae(question);
-    await interaction.editReply(answer.slice(0, 2000));
+    const handled = await handleCommand(interaction, {
+      askLunae,
+    });
+
+    if (!handled && !interaction.replied && !interaction.deferred) {
+      await interaction.reply("Unknown Lunae command.");
+    }
   } catch (error) {
-    console.error(error);
-    await interaction.editReply(
-      "I couldn't process that request. Check the bot configuration and try again."
-    );
+    console.error("Interaction error:", error);
+
+    if (interaction.deferred || interaction.replied) {
+      await interaction.editReply("Something went wrong while processing the command.");
+    } else {
+      await interaction.reply("Something went wrong while processing the command.");
+    }
   }
 });
 
