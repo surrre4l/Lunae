@@ -1,14 +1,30 @@
 const { Client, GatewayIntentBits } = require("discord.js");
+const http = require("http");
 require("dotenv").config();
 
 const { askLunae } = require("./ai");
 const { handleCommand } = require("./commands/router");
 
+const PORT = process.env.PORT || 3000;
+
+// Render health server
+const server = http.createServer((req, res) => {
+  res.writeHead(200, {
+    "Content-Type": "text/plain",
+  });
+
+  res.end("Lunae is running.");
+});
+
+server.listen(PORT, "0.0.0.0", () => {
+  console.log(`Health server listening on port ${PORT}`);
+});
+
 const client = new Client({
   intents: [GatewayIntentBits.Guilds],
 });
 
-client.once("ready", () => {
+client.once("clientReady", () => {
   console.log(`Lunae is online as ${client.user.tag}`);
 });
 
