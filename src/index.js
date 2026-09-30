@@ -1,9 +1,15 @@
-const { Client, GatewayIntentBits } = require("discord.js");
+const {
+  Client,
+  GatewayIntentBits,
+  REST,
+  Routes,
+} = require("discord.js");
 const http = require("http");
 require("dotenv").config();
 
 const { askLunae } = require("./ai");
 const { handleCommand } = require("./commands/router");
+const { loadCommands } = require("./commands");
 
 const PORT = process.env.PORT || 3000;
 
@@ -24,8 +30,40 @@ const client = new Client({
   intents: [GatewayIntentBits.Guilds],
 });
 
-client.once("clientReady", () => {
+async function registerCommands() {
+  const commands = loadCommands();
+
+  const commandData = Array.from(commands.values()).map((command) =>
+    command.data.toJSON()
+  );
+
+  const rest = new REST({ version: "10" }).setToken(
+    process.env.DISCORD_TOKEN
+  );
+
+  await rest.put(
+    Routes.applicationGuildCommands(
+      process.env.CLIENT_ID,
+      process.env.GUILD_ID
+    ),
+    {
+      body: commandData,
+    }
+  );
+
+  console.log(
+    `Registered ${commandData.length} Lunae slash commands.`
+  );
+}
+
+client.once("clientReady", async () => {
   console.log(`Lunae is online as ${client.user.tag}`);
+
+  try {
+    await registerCommands();
+  } catch (error) {
+    console.error("Command registration failed:", error);
+  }
 });
 
 client.on("interactionCreate", async (interaction) => {
