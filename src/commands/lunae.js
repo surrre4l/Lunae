@@ -18,12 +18,15 @@ module.exports = {
 
     try {
       const answer = await askLunae(question);
-      await interaction.editReply(answer.slice(0, 2000));
-    } catch (error) {
-      console.error(error);
 
       await interaction.editReply(
-        "I couldn't process that request. Check the Lunae configuration."
+        answer.length > 2000 ? answer.slice(0, 1997) + "..." : answer
+      );
+    } catch (error) {
+      console.error("Lunae command error:", error);
+
+      await interaction.editReply(
+        "I couldn't process that request. Please check Lunae's configuration."
       );
     }
   },
