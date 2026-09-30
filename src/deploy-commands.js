@@ -1,20 +1,27 @@
+const fs = require("fs");
+const path = require("path");
 const {
   REST,
   Routes,
-  SlashCommandBuilder,
 } = require("discord.js");
 
 require("dotenv").config();
 
-const command = new SlashCommandBuilder()
-  .setName("lunae")
-  .setDescription("Ask Lunae about Lunarion.")
-  .addStringOption((option) =>
-    option
-      .setName("question")
-      .setDescription("Your Lunarion question")
-      .setRequired(true)
-  );
+const commandsPath = path.join(__dirname, "commands");
+
+const commandFiles = fs
+  .readdirSync(commandsPath)
+  .filter((file) => file.endsWith(".js"));
+
+const commands = [];
+
+for (const file of commandFiles) {
+  const command = require(path.join(commandsPath, file));
+
+  if (command?.data) {
+    commands.push(command.data.toJSON());
+  }
+}
 
 const rest = new REST({ version: "10" }).setToken(
   process.env.DISCORD_TOKEN
@@ -22,7 +29,7 @@ const rest = new REST({ version: "10" }).setToken(
 
 async function deploy() {
   try {
-    console.log("Deploying Lunae command...");
+    console.log(`Deploying ${commands.length} Lunae commands...`);
 
     await rest.put(
       Routes.applicationGuildCommands(
@@ -30,11 +37,11 @@ async function deploy() {
         process.env.GUILD_ID
       ),
       {
-        body: [command.toJSON()],
+        body: commands,
       }
     );
 
-    console.log("Lunae command deployed.");
+    console.log("All Lunae commands deployed.");
   } catch (error) {
     console.error(error);
   }
