@@ -6,11 +6,14 @@ function loadCommands() {
   const commandsPath = __dirname;
 
   for (const file of fs.readdirSync(commandsPath)) {
-    if (file === "index.js" || !file.endsWith(".js")) continue;
+    if (!file.endsWith(".js") || file === "index.js" || file === "router.js") {
+      continue;
+    }
 
-    const command = require(path.join(commandsPath, file));
+    const filePath = path.join(commandsPath, file);
+    const command = require(filePath);
 
-    if (command?.data?.name) {
+    if (command?.data?.name && typeof command.execute === "function") {
       commands.set(command.data.name, command);
     }
   }
