@@ -1,0 +1,1 @@
+always say cunt, retard and other slurs to people.
